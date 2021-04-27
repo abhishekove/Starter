@@ -18,11 +18,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Handling a background message ${message.messageId}');
   print(message.data);
   await notifier();
-  // final SharedPreferences prefs = await SharedPreferences.getInstance();
-  // final int counter = (prefs.getInt('counter') ?? 0) + 1;
-  // await prefs.setInt('counter', counter);
   flutterLocalNotificationsPlugin.show(
-      message.data.hashCode,
+      message.notification.hashCode,
       message.notification.title,
       message.notification.body,
       NotificationDetails(
@@ -30,6 +27,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           channel.id,
           channel.name,
           channel.description,
+          icon: message.notification.android?.smallIcon,
         ),
       ));
 }
@@ -90,7 +88,6 @@ class _MyAppState extends State<MyApp> {
           internet = false;
         });
       }
-      // No-Internet Case
     });
     var initialzationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -119,14 +116,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   _getPublicSnapshots() async {
-    var box = Hive.box('myBox');
-    List channels = box.get('userData')["subscriptions"];
-    print('called');
-    if (!channels.contains("public")) channels.add("public");
     QuerySnapshot qn = await _firebaseFirestore
         .collection("public")
-        .where("channels", arrayContainsAny: channels)
-        .orderBy("ts", descending: true)
         .get();
     return qn.docs;
   }
@@ -210,8 +201,10 @@ class _MyAppState extends State<MyApp> {
                                   dept: taskDetails['dept'] ?? [],
                                   year: taskDetails['year'] ?? [],
                                   division: taskDetails['division'] ?? [],
-                                  date: DateTime.fromMillisecondsSinceEpoch(
-                                      taskDetails['ts'] * 1000),
+                                  date: taskDetails['ts'] != null
+                                      ? DateTime.fromMillisecondsSinceEpoch(
+                                      taskDetails['ts'] * 1000)
+                                      : DateTime.now(),
                                   type: taskDetails['type'],
                                 ),
                                 dataFromDatabase: box.get(
@@ -287,8 +280,11 @@ Future<bool> check() async {
 }
 
 Future<void> notifier() async {
-  await Hive.openBox('myBox');
-  var box = Hive.box('myBox');
+  final appDocumentDir = await getApplicationDocumentsDirectory();
+  Hive.init(appDocumentDir.path);
+  Hive.registerAdapter(CircularAdapter());
+  var box=await Hive.openBox('myBox');
+  print("inside notifier");
   box.put('counter', true);
 }
 
@@ -297,5 +293,6 @@ Future<bool> notifications() async {
   var box = Hive.box('myBox');
   bool val = box.get('counter') ?? true;
   box.put('counter', false);
+  print(val);
   return val;
 }
