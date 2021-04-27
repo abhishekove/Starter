@@ -39,7 +39,6 @@ dependencies:
   cloud_firestore:
   firebase_messaging: ^9.1.0
   flutter_local_notifications: ^5.0.0
-  shared_preferences:
   hive:
   hive_flutter:
   google_fonts:
@@ -47,6 +46,7 @@ dependencies:
   flutter_linkify:
   url_launcher:
   cached_network_image:
+  connectivity:
 
 dev_dependencies:
   flutter_test:
